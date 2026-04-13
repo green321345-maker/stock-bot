@@ -88,3 +88,26 @@ python auto_alert_worker.py --interval 30 --cooldown 5
 - 앱만 볼 때: `./run.sh`
 - 완전 자동 알림만 돌릴 때: `./run_worker.sh`
 - 둘 다 한 번에 실행: `./run_all.sh`
+
+
+## 컴퓨터 꺼져도 알림 받기 (Always-On)
+
+로컬 PC가 꺼지면 로컬 워커도 멈춥니다.
+그래서 **클라우드에서 워커를 항상 실행**해야 합니다.
+
+이 저장소에는 GitHub Actions 스케줄 워커가 포함되어 있습니다:
+- 파일: `.github/workflows/auto-alert-worker.yml`
+- 기본 주기: 5분마다 1회 실행
+
+설정 방법:
+1. GitHub 저장소 `Settings -> Secrets and variables -> Actions` 이동
+2. `ALERT_RULES_JSON` 시크릿 추가 (종목별 알림 규칙 JSON)
+3. (선택) `ALERT_STATE_JSON` 시크릿 추가 (중복 방지 상태값)
+4. Actions 활성화 후 워크플로우 실행
+
+예시 `ALERT_RULES_JSON`:
+```json
+{
+  "AAPL": {"provider":"discord", "webhook_url":"https://discord.com/api/webhooks/...", "buy_below":180, "sell_above":220}
+}
+```

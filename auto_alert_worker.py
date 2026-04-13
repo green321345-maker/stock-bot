@@ -3,6 +3,7 @@
 
 import argparse
 import json
+import os
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -13,6 +14,28 @@ import yfinance as yf
 
 ALERT_RULES_FILE = Path("alert_rules.json")
 ALERT_STATE_FILE = Path("alert_state.json")
+
+
+def load_rules_from_env() -> Dict[str, dict]:
+    raw = os.getenv("ALERT_RULES_JSON", "").strip()
+    if not raw:
+        return {}
+    try:
+        data = json.loads(raw)
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def load_state_from_env() -> Dict[str, float]:
+    raw = os.getenv("ALERT_STATE_JSON", "").strip()
+    if not raw:
+        return {}
+    try:
+        data = json.loads(raw)
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
 
 
 def load_json(path: Path, default):
@@ -50,8 +73,10 @@ def send_webhook(url: str, provider: str, payload: dict):
 
 
 def check_once(cooldown_min: int) -> List[str]:
-    rules: Dict[str, dict] = load_json(ALERT_RULES_FILE, {})
-    state: Dict[str, float] = load_json(ALERT_STATE_FILE, {})
+    rules_env = load_rules_from_env()
+    state_env = load_state_from_env()
+    rules: Dict[str, dict] = rules_env if rules_env else load_json(ALERT_RULES_FILE, {})
+    state: Dict[str, float] = state_env if state_env else load_json(ALERT_STATE_FILE, {})
     sent: List[str] = []
     now_ts = time.time()
 
@@ -94,7 +119,8 @@ def check_once(cooldown_min: int) -> List[str]:
             state[key] = now_ts
             sent.append(f"{ticker}: {', '.join(alerts)}")
 
-    save_json(ALERT_STATE_FILE, state)
+    if not state_env:
+        save_json(ALERT_STATE_FILE, state)
     return sent
 
 
@@ -102,7 +128,15 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--interval", type=int, default=60, help="Polling interval in seconds")
     parser.add_argument("--cooldown", type=int, default=10, help="Cooldown in minutes")
+    parser.add_argument("--once", action="store_true", help="Run only once then exit")
     args = parser.parse_args()
+
+    if args.once:
+        sent = check_once(cooldown_min=args.cooldown)
+        print(f"[worker-once] sent={len(sent)}")
+        for x in sent:
+            print(" -", x)
+        return
 
     print(f"[worker] started interval={args.interval}s cooldown={args.cooldown}m")
     while True:
