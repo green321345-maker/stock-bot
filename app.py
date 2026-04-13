@@ -186,6 +186,27 @@ def score_ticker(info: dict, strategy_name: str) -> Dict[str, float]:
     return {"score": score, "reliability": reliability, "coverage": coverage}
 
 
+def aggregate_strategy_scores(info: dict, strategies: List[str], mode: str) -> Dict[str, object]:
+    if not strategies:
+        return {"score": 0, "reliability": 0, "by_strategy": {}, "passed": False}
+
+    by_strategy = {s: score_ticker(info, s) for s in strategies}
+    scores = [x["score"] for x in by_strategy.values()]
+    reliabilities = [x["reliability"] for x in by_strategy.values()]
+
+    if mode.startswith("ALL"):
+        passed = all((by_strategy[s]["score"] >= 0) for s in strategies)
+    else:
+        passed = any((by_strategy[s]["score"] >= 0) for s in strategies)
+
+    return {
+        "score": int(sum(scores) / len(scores)),
+        "reliability": int(sum(reliabilities) / len(reliabilities)),
+        "by_strategy": by_strategy,
+        "passed": passed,
+    }
+
+
 def risk_stats(hist: pd.DataFrame) -> Dict[str, Optional[float]]:
     if hist is None or hist.empty or "Close" not in hist:
         return {"수익률(기간)": None, "연환산 변동성": None, "최대낙폭(MDD)": None}
@@ -267,7 +288,12 @@ st.markdown("""
 with st.sidebar:
     st.markdown("### 검색/필터 옵션")
     period = st.selectbox("차트 기간", ["6mo", "1y", "3y", "5y", "10y", "max"], index=3)
-    strategy = st.selectbox("전략 프리셋", list(STRATEGY_PRESETS.keys()))
+    selected_strategies = st.multiselect(
+        "전략 프리셋(복수 선택 가능)",
+        list(STRATEGY_PRESETS.keys()),
+        default=["Buffett (가치+품질)"]
+    )
+    strategy_mode = st.selectbox("전략 결합 방식", ["ALL(모두 충족)", "ANY(하나 이상 충족)"])
     invest_style = st.selectbox("투자 스타일", ["스캘핑", "스윙", "장기투자"])
     capital_range = st.selectbox("투자 금액", list(CAPITAL_HINTS.keys()))
     min_score = st.slider("최소 전략 적합도", 40, 95, 65)
@@ -283,15 +309,22 @@ if st.button("전략 기준으로 후보 기업 바로 보기", type="primary"):
     for i, tk in enumerate(CANDIDATE_TICKERS):
         try:
             info = load_info(tk)
-            scored = score_ticker(info, strategy)
-            if scored["score"] >= min_score and scored["reliability"] >= min_reliability:
+            agg = aggregate_strategy_scores(info, selected_strategies, strategy_mode)
+            pass_checks = agg["score"] >= min_score and agg["reliability"] >= min_reliability
+            if strategy_mode.startswith("ALL"):
+                pass_checks = pass_checks and all(v["score"] >= min_score for v in agg["by_strategy"].values())
+            elif strategy_mode.startswith("ANY"):
+                pass_checks = pass_checks and any(v["score"] >= min_score for v in agg["by_strategy"].values())
+
+            if pass_checks:
                 rows.append(
                     {
                         "티커": tk,
                         "기업명": info.get("shortName") or tk,
                         "현재가": safe_num(info.get("currentPrice")),
-                        "전략점수": scored["score"],
-                        "신뢰도": scored["reliability"],
+                        "전략점수(평균)": agg["score"],
+                        "신뢰도(평균)": agg["reliability"],
+                        "전략개수": len(selected_strategies),
                         "섹터": info.get("sector") or "-",
                     }
                 )
@@ -299,8 +332,9 @@ if st.button("전략 기준으로 후보 기업 바로 보기", type="primary"):
             pass
         progress.progress((i + 1) / len(CANDIDATE_TICKERS))
 
-    df = pd.DataFrame(rows).sort_values(["신뢰도", "전략점수"], ascending=False)
+    df = pd.DataFrame(rows)
     if not df.empty:
+        df = df.sort_values(["신뢰도(평균)", "전략점수(평균)"], ascending=False)
         st.success(f"{len(df)}개 종목이 조건을 통과했습니다.")
         st.dataframe(df, use_container_width=True)
     else:
@@ -310,7 +344,7 @@ st.markdown("## 기업 검색")
 query = st.text_input("기업명 / 티커 / 한국 6자리 코드(예: 005930)", placeholder="예: 삼성전자, 005930, AAPL")
 selected = None
 if query:
-    quotes = search_tickers(query)
+    quotes = search_tickers(query) or []
     if quotes:
         options = []
         mapper = {}
@@ -328,15 +362,16 @@ if query:
 
 if selected:
     info, hist, financials, recommendations, targets, news = load_ticker(selected, period)
-    scored = score_ticker(info, strategy)
+    agg_scored = aggregate_strategy_scores(info, selected_strategies, strategy_mode)
 
     st.markdown(f"### 선택 종목: <span class='purple'>{selected}</span>", unsafe_allow_html=True)
 
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("현재가", format_value(safe_num(info.get("currentPrice"))))
     c2.metric("시가총액", format_value(safe_num(info.get("marketCap"))))
-    c3.metric("전략 적합도", str(scored["score"]))
-    c4.metric("데이터 신뢰도", str(scored["reliability"]))
+    c3.metric("전략 적합도(평균)", str(agg_scored["score"]))
+    c4.metric("데이터 신뢰도(평균)", str(agg_scored["reliability"]))
+    st.json({"전략별점수": agg_scored["by_strategy"]})
 
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["차트/재무", "통계(한글)", "전문가 의견", "예상 주가", "관심종목/알림", "뉴스"])
 

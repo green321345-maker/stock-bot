@@ -7,7 +7,7 @@
 - 한국주식 + 미국주식 검색 (`005930` 같은 6자리 코드도 지원)
 - 장기 차트: `6mo`, `1y`, `3y`, `5y`, `10y`, `max`
 - 원클릭 우량기업 스크리너 (전략점수 + 신뢰도 기준)
-- 전략 프리셋: Buffett / Lynch / Graham / CANSLIM Lite / Minervini Lite / Quality Growth
+- 전략 프리셋(복수 선택): Buffett / Lynch / Graham / CANSLIM Lite / Minervini Lite / Quality Growth
 - 통계 한글화 탭 (PER, PBR, ROE, 부채비율, 성장률 등)
 - 리스크 통계(기간 수익률, 연환산 변동성, MDD)
 - 전문가 의견/목표가 + 출처 안내
