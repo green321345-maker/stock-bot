@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-streamlit run app.py
+streamlit run stock.py

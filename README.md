@@ -29,3 +29,6 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ./run.sh
 ```
+
+
+엔트리 파일: `stock.py`
