@@ -77,3 +77,14 @@ pip install -r requirements.txt
 ```bash
 python auto_alert_worker.py --interval 30 --cooldown 5
 ```
+
+
+## 파일 역할
+
+- `stock.py`: Streamlit UI 앱 (화면/검색/필터/설정)
+- `auto_alert_worker.py`: 백그라운드 자동 알림 워커 (UI 없이도 알림 전송)
+
+즉, **둘 다 필요**합니다.
+- 앱만 볼 때: `./run.sh`
+- 완전 자동 알림만 돌릴 때: `./run_worker.sh`
+- 둘 다 한 번에 실행: `./run_all.sh`
