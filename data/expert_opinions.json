@@ -1,0 +1,43 @@
+{
+  "AAPL": [
+    {
+      "expert": "Morgan Stanley (Erik Woodring)",
+      "target_price_usd": 220,
+      "rating": "Overweight",
+      "as_of": "2026-03-12",
+      "source": "리서치 노트 요약(내부 입력)"
+    },
+    {
+      "expert": "Wedbush (Daniel Ives)",
+      "target_price_usd": 250,
+      "rating": "Outperform",
+      "as_of": "2026-02-28",
+      "source": "리서치 노트 요약(내부 입력)"
+    }
+  ],
+  "TSLA": [
+    {
+      "expert": "Goldman Sachs (Mark Delaney)",
+      "target_price_usd": 210,
+      "rating": "Neutral",
+      "as_of": "2026-03-07",
+      "source": "리서치 노트 요약(내부 입력)"
+    },
+    {
+      "expert": "ARK Invest (Model Team)",
+      "target_price_usd": 300,
+      "rating": "Bull case",
+      "as_of": "2026-01-31",
+      "source": "공개 모델 업데이트 요약(내부 입력)"
+    }
+  ],
+  "MSFT": [
+    {
+      "expert": "JPMorgan (Mark Murphy)",
+      "target_price_usd": 500,
+      "rating": "Overweight",
+      "as_of": "2026-03-19",
+      "source": "리서치 노트 요약(내부 입력)"
+    }
+  ]
+}
