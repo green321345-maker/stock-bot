@@ -1,0 +1,25 @@
+name: Auto Alert Worker
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  run-worker-once:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run worker once
+        env:
+          ALERT_RULES_JSON: ${{ secrets.ALERT_RULES_JSON }}
+          ALERT_STATE_JSON: ${{ secrets.ALERT_STATE_JSON }}
+        run: |
+          python auto_alert_worker.py --once --cooldown 10
